@@ -5,7 +5,42 @@ def add(a, b) {
     return a + b
 }
 
-var int firstInput = input("First Integer: ")
-var int secondInput = input("Second Integer: ")
+# CapLang Calculator
+# R7L Labs
 
-print add(firstInput, secondInput)
+def add(a, b) {
+    return a + b
+}
+
+def subtract(a, b) {
+    return a - b
+}
+
+def multiply(a, b) {
+    return a * b
+}
+
+def divide(a, b) {
+    return a / b
+}
+
+var int firstInput = input("First Integer")
+var int secondInput = input("Second Integer")
+var string operation = input("Operation (+,-,*,/)")
+
+var int result = 0
+
+if (operation == "+") {
+    result = add(firstInput, secondInput)
+} else if (operation == "-") {
+    result = subtract(firstInput, secondInput)
+} else if (operation == "*") {
+    result = multiply(firstInput, secondInput)
+} else if (operation == "/") {
+    result = divide(firstInput, secondInput)
+} else {
+    print "Invalid operation!"
+}
+
+print result
+

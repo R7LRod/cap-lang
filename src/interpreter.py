@@ -40,6 +40,8 @@ class FunctionCallable:
 class Environment:
     def __init__(self, enclosing: 'Environment' = None):
         self.values = {}
+        # optional declared types for variables in this environment
+        self.types = {}
         self.enclosing = enclosing
 
     def define(self, name: str, value: Any):
@@ -51,6 +53,13 @@ class Environment:
         if self.enclosing is not None:
             return self.enclosing.get(name)
         raise RuntimeError(f"Undefined variable '{name}'")
+
+    def get_type(self, name: str):
+        if name in self.types:
+            return self.types[name]
+        if self.enclosing is not None:
+            return self.enclosing.get_type(name)
+        return None
 
     def assign(self, name: str, value: Any):
         if name in self.values:
@@ -90,6 +99,12 @@ class Interpreter:
             value = None
             if stmt.initializer is not None:
                 value = self.evaluate(stmt.initializer)
+            # if a declared type is present, attempt to coerce the value
+            if getattr(stmt, 'vtype', None) is not None:
+                vtype = stmt.vtype.lexeme
+                value = self.coerce_value(value, vtype)
+                # record type in environment
+                self.environment.types[stmt.name.lexeme] = vtype
             self.environment.define(stmt.name.lexeme, value)
         elif isinstance(stmt, ImportStmt):
             # Map Java-style import paths to the pyspigot module
@@ -161,7 +176,7 @@ class Interpreter:
             elif expr.operator.type == TokenType.STAR:
                 return float(left) * float(right)
             elif expr.operator.type == TokenType.PLUS:
-                if isinstance(left, float) and isinstance(right, float):
+                if isinstance(left, (int, float)) and isinstance(right, (int, float)):
                     return left + right
                 if isinstance(left, str) and isinstance(right, str):
                     return left + right
@@ -202,8 +217,48 @@ class Interpreter:
 
         if isinstance(expr, Assign):
             value = self.evaluate(expr.value)
+            # if the variable has a declared type, attempt coercion before assigning
+            vtype = self.environment.get_type(expr.name.lexeme)
+            if vtype is not None:
+                value = self.coerce_value(value, vtype)
             self.environment.assign(expr.name.lexeme, value)
             return value
+
+    def coerce_value(self, value: Any, vtype: str) -> Any:
+        """Attempt to coerce a runtime value to the declared type name (vtype).
+
+        Supported types: int, float, string, bool
+        """
+        if vtype is None:
+            return value
+        vt = vtype.lower()
+        try:
+            if vt == 'int':
+                # prefer int when possible, fall back to converting to float
+                try:
+                    return int(value)
+                except Exception:
+                    try:
+                        return int(float(value))
+                    except Exception:
+                        return float(value)
+            if vt == 'float':
+                return float(value)
+            if vt in ('string', 'str'):
+                return str(value)
+            if vt == 'bool':
+                if isinstance(value, bool):
+                    return value
+                if isinstance(value, str):
+                    v = value.strip().lower()
+                    if v in ('true', '1', 'yes'):
+                        return True
+                    if v in ('false', '0', 'no'):
+                        return False
+                return bool(value)
+        except Exception as e:
+            raise RuntimeError(f"Cannot coerce value {value!r} to type '{vtype}': {e}")
+        return value
 
         raise RuntimeError(f"Unknown expression type: {type(expr)}")
 

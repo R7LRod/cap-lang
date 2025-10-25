@@ -1,0 +1,11 @@
+# CapLang Calculator
+# R7L Labs
+
+def add(a, b) {
+    return a + b
+}
+
+var int firstInput = input("First Integer: ")
+var int secondInput = input("Second Integer: ")
+
+print add(firstInput, secondInput)

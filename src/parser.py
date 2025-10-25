@@ -76,9 +76,10 @@ class Return(Stmt):
         self.value = value
 
 class VarStmt(Stmt):
-    def __init__(self, name: Token, initializer: Optional[Expr]):
+    def __init__(self, name: Token, initializer: Optional[Expr], vtype: Optional[Token] = None):
         self.name = name
         self.initializer = initializer
+        self.vtype = vtype
 
 class ImportStmt(Stmt):
     def __init__(self, path: List[Token]):
@@ -135,7 +136,20 @@ class Parser:
         return ImportStmt(parts)
 
     def var_declaration(self) -> Stmt:
-        name = self.consume(TokenType.IDENTIFIER, "Expect variable name.")
+        # support optional type annotation: var <type> <name> = <expr>
+        vtype = None
+        name = None
+        if self.match(TokenType.IDENTIFIER):
+            first = self.previous()
+            # if the next token is also an identifier, treat first as the type
+            if self.check(TokenType.IDENTIFIER):
+                vtype = first
+                name = self.consume(TokenType.IDENTIFIER, "Expect variable name.")
+            else:
+                name = first
+        else:
+            name = self.consume(TokenType.IDENTIFIER, "Expect variable name.")
+
         initializer = None
         if self.match(TokenType.EQUAL):
             initializer = self.expression()
@@ -144,7 +158,7 @@ class Parser:
         if self.match(TokenType.SEMICOLON):
             pass
 
-        return VarStmt(name, initializer)
+        return VarStmt(name, initializer, vtype)
 
     def statement(self) -> Stmt:
         if self.match(TokenType.PRINT):

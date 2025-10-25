@@ -14,7 +14,7 @@ import ast
 from typing import List
 
 
-def run_file(path: str, mode: str, out: str | None = None):
+def run_file(path: str, mode: str, out: str | None = None, debug: bool = False):
     with open(path, 'r', encoding='utf-8') as f:
         source = f.read()
 
@@ -26,9 +26,9 @@ def run_file(path: str, mode: str, out: str | None = None):
         return 1
 
     if mode == 'run':
-        interp = Interpreter()
-        interp.interpret(statements)
-        return 0
+        interp = Interpreter(debug=debug)
+        success = interp.interpret(statements)
+        return 0 if success else 1
 
     elif mode == 'compile':
         comp = Compiler()
@@ -197,6 +197,7 @@ def main():
     parser.add_argument('path', help='Path to a .capla or .py file')
     parser.add_argument('--mode', choices=['run', 'compile', 'translate'], default='run', help='Run with the interpreter, compile-to-python and run, or translate a Python -> .capla')
     parser.add_argument('--out', help='When mode=compile or mode=translate, write output to this file instead of executing it')
+    parser.add_argument('--debug', action='store_true', help='Show full Python tracebacks on runtime errors (disabled by default)')
 
     args = parser.parse_args()
 
@@ -205,7 +206,7 @@ def main():
         translate_python_to_capla(args.path, args.out)
         return_code = 0
     else:
-        return_code = run_file(args.path, args.mode, args.out)
+        return_code = run_file(args.path, args.mode, args.out, debug=args.debug)
     sys.exit(return_code)
 
 

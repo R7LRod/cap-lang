@@ -10,6 +10,8 @@ class TokenType(Enum):
     FALSE = auto()
     NIL = auto()
     RETURN = auto()
+    TRY = auto()
+    CATCH = auto()
     # Statements / control
     PRINT = auto()
     VAR = auto()
@@ -88,6 +90,8 @@ class Lexer:
             "break": TokenType.BREAK,
             "continue": TokenType.CONTINUE,
             "import": TokenType.IMPORT,
+            "try": TokenType.TRY,
+            "catch": TokenType.CATCH,
         })
 
     def scan_tokens(self):

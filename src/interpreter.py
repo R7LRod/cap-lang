@@ -3,7 +3,7 @@ from lexer import Token, TokenType
 from parser import (
     Binary, Grouping, Literal, Unary, Variable, Expr, Assign,
     Stmt, ExpressionStmt, PrintStmt, VarStmt, BlockStmt, IfStmt, WhileStmt, ImportStmt, Call, Get,
-    FunctionStmt, Return
+    FunctionStmt, Return, TryStmt
 )
 import time
 from typing import List
@@ -72,8 +72,9 @@ class Environment:
 
 
 class Interpreter:
-    def __init__(self):
+    def __init__(self, debug: bool = False):
         self.environment = Environment()
+        self.debug = debug
         # Bind simple built-ins
         # input(prompt) -> Python input
         self.environment.define('input', lambda prompt=None: input(prompt if prompt is not None else ''))
@@ -86,7 +87,13 @@ class Interpreter:
             for stmt in statements:
                 self.execute(stmt)
         except Exception as error:
-            raise RuntimeError(error)
+            # If debug mode is enabled, re-raise so the outer runner can print full traceback
+            if self.debug:
+                raise
+            # Otherwise print a friendly runtime error without Python traceback
+            print(f"Runtime error: {error}")
+            return False
+        return True
 
     # --- Statement execution ---
     def execute(self, stmt: Stmt):
@@ -132,6 +139,22 @@ class Interpreter:
         elif isinstance(stmt, FunctionStmt):
             func = FunctionCallable(stmt, self.environment)
             self.environment.define(stmt.name.lexeme, func)
+        elif isinstance(stmt, TryStmt):
+            # execute try/catch: try block executes normally, if error occurs run catch block
+            try:
+                # execute block statements in a new environment scope
+                self.execute_block(stmt.try_block, Environment(self.environment))
+            except Exception as e:
+                # if catch block present, bind the exception message and execute
+                if stmt.catch_block is not None:
+                    env = Environment(self.environment)
+                    if stmt.catch_param is not None:
+                        # expose the error message as the catch parameter
+                        env.define(stmt.catch_param.lexeme, str(e))
+                    self.execute_block(stmt.catch_block, env)
+                else:
+                    # no catch: re-raise to be handled by outer interpret
+                    raise
         elif isinstance(stmt, Return):
             value = None
             if stmt.value is not None:

@@ -100,6 +100,12 @@ class WhileStmt(Stmt):
         self.condition = condition
         self.body = body
 
+class TryStmt(Stmt):
+    def __init__(self, try_block: List[Stmt], catch_param: Optional[Token], catch_block: Optional[List[Stmt]]):
+        self.try_block = try_block
+        self.catch_param = catch_param
+        self.catch_block = catch_block
+
 
 class Parser:
     def __init__(self, tokens: List[Token]):
@@ -161,6 +167,8 @@ class Parser:
         return VarStmt(name, initializer, vtype)
 
     def statement(self) -> Stmt:
+        if self.match(TokenType.TRY):
+            return self.try_statement()
         if self.match(TokenType.PRINT):
             return self.print_statement()
         if self.match(TokenType.RETURN):
@@ -181,6 +189,32 @@ class Parser:
         if self.match(TokenType.SEMICOLON):
             pass
         return PrintStmt(expr)
+
+    def try_statement(self) -> TryStmt:
+        # we've already matched 'try'
+        # expect a block
+        self.consume(TokenType.LEFT_BRACE, "Expect '{' after 'try'.")
+        try_block: List[Stmt] = []
+        while not self.check(TokenType.RIGHT_BRACE) and not self.is_at_end():
+            try_block.append(self.declaration())
+        self.consume(TokenType.RIGHT_BRACE, "Expect '}' after try block.")
+
+        catch_param = None
+        catch_block = None
+        if self.match(TokenType.CATCH):
+            # optional catch parameter in parentheses: catch (e)
+            if self.match(TokenType.LEFT_PAREN):
+                catch_param = self.consume(TokenType.IDENTIFIER, "Expect identifier in catch clause.")
+                self.consume(TokenType.RIGHT_PAREN, "Expect ')' after catch parameter.")
+
+            # expect a block for catch
+            self.consume(TokenType.LEFT_BRACE, "Expect '{' before catch block.")
+            catch_block = []
+            while not self.check(TokenType.RIGHT_BRACE) and not self.is_at_end():
+                catch_block.append(self.declaration())
+            self.consume(TokenType.RIGHT_BRACE, "Expect '}' after catch block.")
+
+        return TryStmt(try_block, catch_param, catch_block)
 
     def expression_statement(self) -> ExpressionStmt:
         expr = self.expression()

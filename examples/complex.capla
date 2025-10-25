@@ -1,0 +1,43 @@
+print "=== Complex CapLang Demo ==="
+print "(pyspigot import omitted for compiled demo)"
+
+var sum = 0
+var even = false
+for (var i = 1; i <= 10; i = i + 1) {
+    even = (!even)
+    print i
+    if (even) {
+        print "even"
+    } else {
+        print "odd"
+    }
+    sum = sum + i
+}
+
+print "Sum 1..10:" 
+print sum
+
+var n = 6
+var fact = 1
+while (n > 1) {
+    fact = fact * n
+    n = n - 1
+}
+print "6! ="
+print fact
+
+{
+    var greeting = "Inside block"
+    print greeting
+}
+print "block done"
+
+print "Demo complete"
+
+if (true) {
+    print "--- interactive demo (won't run in automated test) ---"
+    var name = input("Your name: ")
+    print "Hello, " + name
+    sleep(0.1)
+    print "(slept 0.1s)"
+}

@@ -1,0 +1,4 @@
+import org.bukkit.Bukkit;
+
+print Bukkit
+print Bukkit.getName()

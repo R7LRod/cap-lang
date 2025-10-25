@@ -15,7 +15,7 @@ Where to start
 
 New & experimental features
 ---------------------------------
-This repository contains recent experimental additions to the prototype. See `docs/added_features.md` for details and examples (function definitions, compile-to-file, a `pyspigot` shim, and a scheduler used in the `LagManager` example).
+This repository contains recent experimental additions to the prototype. See `docs/added_features.md` for details and examples (function definitions, compile-to-file, import preservation, a Python->CapLang translator, the `pyspigot` shim, and a scheduler used in the `LagManager` example).
 
 Quickstart
 

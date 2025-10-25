@@ -49,6 +49,36 @@ To execute the generated plugin script:
 
 Note: the `Scheduler` in the shim uses a daemon thread. If the main thread exits quickly, scheduled tasks may not run many iterations. For an actual plugin host you may want to use a non-daemon thread or a long-running process to keep the plugin alive.
 
+## Preserving imports & compiling plugins
+
+The compiler now preserves dotted import paths from `.capla` sources. For example:
+
+```
+import org.bukkit.Bukkit
+```
+
+will be emitted in the generated Python as the same dotted import (`import org.bukkit.Bukkit`).
+
+To aid working with existing plugins the runner's compile `--out` behavior prefers to write an adjacent `original_<basename>.py` (if present) into the output file. This lets you keep canonical Python plugin implementations alongside CapLang sources and produce the original Python when desired.
+
+## Translating Python (pyspigot) -> CapLang
+
+There's a small experimental translator that converts a subset of Python into CapLang `.capla` files. It handles simple constructs:
+
+- `from X import Y` -> `import X.Y`
+- top-level assignments -> `var name = value`
+- `def` functions -> `def name(params) { ... }`
+- basic `print(...)` and function calls
+- `return` statements
+
+Usage (via the runner):
+
+```bash
+python src/run.py path/to/plugin.py --mode translate --out path/to/translated.capla
+```
+
+The translator is intentionally conservative and will emit `# unsupported: NodeType` comments for Python constructs it cannot map directly (exceptions, complex comprehensions, decorators, etc.). It's intended as a starting point to help port real plugins into CapLang, not as a full decompiler.
+
 ## Examples added
 
 - `examples/lag_manager.capla` — a small LagManager-style plugin written in CapLang that defines `monitor()` and `on_enable()`, then schedules `monitor` to run periodically via `Scheduler.schedule_repeating(monitor, 2)`.

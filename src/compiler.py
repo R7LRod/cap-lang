@@ -100,10 +100,11 @@ class Compiler:
     # --- Statement compilation ---
     def compile_stmt(self, stmt: Stmt) -> List[str]:
         if isinstance(stmt, ImportStmt):
-            # Support java-style import paths like `import org.bukkit.Bukkit`
-            # Map to: from pyspigot import <LastName>
-            last = stmt.path[-1].lexeme
-            return [f"from pyspigot import {last}"]
+            # Preserve dotted import paths from CapLang so generated Python mirrors
+            # the original Java-style imports (e.g. `import org.bukkit.Bukkit`).
+            parts = [p.lexeme for p in stmt.path]
+            dotted = ".".join(parts)
+            return [f"import {dotted}"]
         
         if isinstance(stmt, PrintStmt):
             return [f"print({self.compile_expr(stmt.expression)})"]

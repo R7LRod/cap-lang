@@ -1,0 +1,26 @@
+// Functions example demonstrating `func` (alias for def), recursion, and closures
+
+func add(a, b) {
+    return a + b
+}
+
+func factorial(n) {
+    if (n <= 1) {
+        return 1
+    }
+    return n * factorial(n - 1)
+}
+
+// Nested function (closure) example: make a function that adds 'x' to its argument
+func make_adder(x) {
+    def inner(y) {
+        return x + y
+    }
+    return inner
+}
+
+print add(3, 4)         // should print 7
+print factorial(6)      // should print 720
+
+var inc = make_adder(5)
+print inc(10)           // should print 15

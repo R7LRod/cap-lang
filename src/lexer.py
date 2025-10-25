@@ -70,6 +70,7 @@ class Lexer:
         
         self.keywords = {
             "def": TokenType.DEF,
+            "func": TokenType.DEF,
             "class": TokenType.CLASS,
             "if": TokenType.IF,
             "else": TokenType.ELSE,

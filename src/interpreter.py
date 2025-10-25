@@ -6,7 +6,10 @@ from parser import (
     FunctionStmt, Return, TryStmt
 )
 import time
-from typing import List
+from types import SimpleNamespace
+import os
+import sys
+from typing import Any, List
 
 
 class ReturnException(Exception):
@@ -75,7 +78,9 @@ class Interpreter:
     def __init__(self, debug: bool = False):
         self.environment = Environment()
         self.debug = debug
-        # Bind simple built-ins
+        # cache for loaded modules: modname -> module object
+        self.module_cache = {}
+        # Bind simple-built-ins
         # input(prompt) -> Python input
         self.environment.define('input', lambda prompt=None: input(prompt if prompt is not None else ''))
         # sleep(seconds) -> time.sleep
@@ -114,17 +119,69 @@ class Interpreter:
                 self.environment.types[stmt.name.lexeme] = vtype
             self.environment.define(stmt.name.lexeme, value)
         elif isinstance(stmt, ImportStmt):
-            # Map Java-style import paths to the pyspigot module
-            # Example: import org.bukkit.Bukkit -> will bind 'Bukkit' name from pyspigot
-            last = stmt.path[-1].lexeme
-            try:
-                module = __import__("pyspigot")
-                # try to get attribute from pyspigot
-                value = getattr(module, last, module)
-            except Exception:
-                # If import fails, leave as None; runtime will indicate error when used
-                value = None
-            self.environment.define(last, value)
+            # Support importing other .capla modules by dotted path.
+            parts = [p.lexeme for p in stmt.path]
+            modname = '.'.join(parts)
+            last = parts[-1]
+
+            # return cached module if available
+            if modname in self.module_cache and self.module_cache[modname] is not None:
+                self.environment.define(last, self.module_cache[modname])
+                return
+
+            # resolve possible .capla file locations
+            candidates = []
+            repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+            search_dirs = [os.getcwd(), repo_root, os.path.join(repo_root, 'examples')]
+            for base in search_dirs:
+                candidates.append(os.path.join(base, *parts) + '.capla')
+                candidates.append(os.path.join(base, *parts, '__init__.capla'))
+
+            found = None
+            for c in candidates:
+                if os.path.isfile(c):
+                    found = c
+                    break
+
+            module_obj = None
+            if found is not None:
+                # prevent recursive import loops by marking module as loading
+                self.module_cache[modname] = None
+                try:
+                    from lexer import Lexer
+                    from parser import Parser
+
+                    with open(found, 'r', encoding='utf-8') as mf:
+                        src = mf.read()
+
+                    tokens = Lexer(src).scan_tokens()
+                    stmts = Parser(tokens).parse()
+
+                    # execute module in its own environment that can still access globals
+                    module_env = Environment(self.environment)
+                    self.execute_block(stmts, module_env)
+
+                    # expose module globals as attributes on a module-like object
+                    module_obj = SimpleNamespace(**module_env.values)
+                    self.module_cache[modname] = module_obj
+                except Exception as e:
+                    # leave module as None on failure
+                    if self.debug:
+                        raise
+                    self.module_cache[modname] = None
+            else:
+                # fallback: attempt to import a Python module mapping (pyspigot compatibility)
+                try:
+                    module = __import__(parts[0])
+                    # if dotted, drill down
+                    for attr in parts[1:]:
+                        module = getattr(module, attr)
+                    module_obj = module
+                except Exception:
+                    module_obj = None
+                self.module_cache[modname] = module_obj
+
+            self.environment.define(last, module_obj)
         elif isinstance(stmt, BlockStmt):
             self.execute_block(stmt.statements, Environment(self.environment))
         elif isinstance(stmt, IfStmt):

@@ -1,0 +1,5 @@
+var greeting = "hello from module"
+
+def add(a, b) {
+    return a + b
+}

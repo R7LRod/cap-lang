@@ -1,0 +1,4 @@
+import mymod
+
+print mymod.greeting
+print mymod.add(3, 4)

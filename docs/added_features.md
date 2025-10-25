@@ -17,6 +17,17 @@ This document describes features recently added to the CapLang prototype, how th
 - Builtins added
   - `input(prompt)` — reads a string from stdin (interpreter mode only, unless you provide run-time wrappers).
   - `sleep(seconds)` — wraps `time.sleep` for both interpreter and compiled code.
+  - Type-casting builtins: `int(x)`, `float(x)`, `string(x)` (alias `str(x)`), and `bool(x)`.
+    These coerce runtime values to the requested type using the same rules as the interpreter's declared-type coercion logic.
+    Examples:
+
+    ```capla
+    print int("42")      // prints 42
+    print float(3)         // prints 3.0
+    print string(3.14)     // prints "3.14"
+    print bool(0)          // prints false
+    ```
+    Note: these are functions (call syntax) rather than a special cast operator.
 
 ## pyspigot shim and plugin compilation
 

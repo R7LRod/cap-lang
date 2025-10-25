@@ -85,6 +85,13 @@ class Interpreter:
         self.environment.define('input', lambda prompt=None: input(prompt if prompt is not None else ''))
         # sleep(seconds) -> time.sleep
         self.environment.define('sleep', time.sleep)
+        # Type cast builtins: int(x), float(x), string(x)/str(x), bool(x)
+        # Use the interpreter's coerce_value to keep coercion behavior consistent
+        self.environment.define('int', lambda v: self.coerce_value(v, 'int'))
+        self.environment.define('float', lambda v: self.coerce_value(v, 'float'))
+        self.environment.define('string', lambda v: self.coerce_value(v, 'string'))
+        self.environment.define('str', lambda v: self.coerce_value(v, 'string'))
+        self.environment.define('bool', lambda v: self.coerce_value(v, 'bool'))
         # expose simple scheduler and other helpers via pyspigot import mapping
 
     def interpret(self, statements: List[Stmt]):

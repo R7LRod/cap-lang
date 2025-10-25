@@ -13,6 +13,10 @@ Where to start
 - Runner: `src/run.py` — interpret or compile-and-run a `.capla` file
 - Docs: `docs/` contains quickstart, language spec, tutorial and examples
 
+New & experimental features
+---------------------------------
+This repository contains recent experimental additions to the prototype. See `docs/added_features.md` for details and examples (function definitions, compile-to-file, a `pyspigot` shim, and a scheduler used in the `LagManager` example).
+
 Quickstart
 
 Run the interpreter (evaluate the expression in the `.capla` file):

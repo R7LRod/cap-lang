@@ -38,6 +38,6 @@ if (true) {
     print "--- interactive demo (won't run in automated test) ---"
     var name = input("Your name: ")
     print "Hello, " + name
-    sleep(0.1)
-    print "(slept 0.1s)"
+    sleep(2)
+    print "(slept 2s)"
 }

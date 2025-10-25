@@ -33,6 +33,21 @@ class Assign(Expr):
         self.name = name
         self.value = value
 
+class Function(Expr):
+    def __init__(self, name: Token, params: List[Token], body: List['Stmt']):
+        self.name = name
+        self.params = params
+        self.body = body
+
+class ReturnStmt(Expr):
+    def __init__(self, value: Optional[Expr]):
+        self.value = value
+
+class Get(Expr):
+    def __init__(self, object: Expr, name: Token):
+        self.object = object
+        self.name = name
+
 class Call(Expr):
     def __init__(self, callee: Expr, arguments: List[Expr]):
         self.callee = callee
@@ -49,6 +64,16 @@ class ExpressionStmt(Stmt):
 class PrintStmt(Stmt):
     def __init__(self, expression: Expr):
         self.expression = expression
+
+class FunctionStmt(Stmt):
+    def __init__(self, name: Token, params: List[Token], body: List[Stmt]):
+        self.name = name
+        self.params = params
+        self.body = body
+
+class Return(Stmt):
+    def __init__(self, value: Optional[Expr]):
+        self.value = value
 
 class VarStmt(Stmt):
     def __init__(self, name: Token, initializer: Optional[Expr]):
@@ -90,6 +115,8 @@ class Parser:
     def declaration(self) -> Stmt:
         if self.match(TokenType.VAR):
             return self.var_declaration()
+        if self.match(TokenType.DEF):
+            return self.function_declaration()
         if self.match(TokenType.IMPORT):
             return self.import_declaration()
         return self.statement()
@@ -122,6 +149,8 @@ class Parser:
     def statement(self) -> Stmt:
         if self.match(TokenType.PRINT):
             return self.print_statement()
+        if self.match(TokenType.RETURN):
+            return self.return_statement()
         if self.match(TokenType.FOR):
             return self.for_statement()
         if self.match(TokenType.IF):
@@ -212,6 +241,31 @@ class Parser:
 
         return body
 
+    def function_declaration(self) -> Stmt:
+        name = self.consume(TokenType.IDENTIFIER, "Expect function name.")
+        self.consume(TokenType.LEFT_PAREN, "Expect '(' after function name.")
+        params: List[Token] = []
+        if not self.check(TokenType.RIGHT_PAREN):
+            params.append(self.consume(TokenType.IDENTIFIER, "Expect parameter name."))
+            while self.match(TokenType.COMMA):
+                params.append(self.consume(TokenType.IDENTIFIER, "Expect parameter name."))
+        self.consume(TokenType.RIGHT_PAREN, "Expect ')' after parameters.")
+
+        self.consume(TokenType.LEFT_BRACE, "Expect '{' before function body.")
+        body: List[Stmt] = []
+        while not self.check(TokenType.RIGHT_BRACE) and not self.is_at_end():
+            body.append(self.declaration())
+        self.consume(TokenType.RIGHT_BRACE, "Expect '}' after function body.")
+        return FunctionStmt(name, params, body)
+
+    def return_statement(self) -> Stmt:
+        value = None
+        if not self.check(TokenType.SEMICOLON) and not self.check(TokenType.RIGHT_BRACE):
+            value = self.expression()
+        if self.match(TokenType.SEMICOLON):
+            pass
+        return Return(value)
+
     # --- Expressions ---
     def expression(self) -> Expr:
         return self.assignment()
@@ -294,8 +348,14 @@ class Parser:
 
                 self.consume(TokenType.RIGHT_PAREN, "Expect ')' after arguments.")
                 expr = Call(expr, args)
-            else:
-                break
+                continue
+
+            if self.match(TokenType.DOT):
+                name = self.consume(TokenType.IDENTIFIER, "Expect property name after '.'.")
+                expr = Get(expr, name)
+                continue
+
+            break
 
         return expr
 

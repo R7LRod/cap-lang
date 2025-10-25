@@ -1,7 +1,8 @@
 from typing import List
 from parser import (
     Binary, Grouping, Literal, Unary, Variable, Expr,
-    Stmt, ExpressionStmt, PrintStmt, VarStmt, BlockStmt, IfStmt, WhileStmt, Assign, ImportStmt, Call
+    Stmt, ExpressionStmt, PrintStmt, VarStmt, BlockStmt, IfStmt, WhileStmt, Assign, ImportStmt, Call, Get,
+    FunctionStmt, Return
 )
 from lexer import TokenType
 
@@ -23,6 +24,8 @@ class Compiler:
             return self.compile_unary(expr)
         elif isinstance(expr, Variable):
             return self.compile_variable(expr)
+        elif isinstance(expr, Get):
+            return self.compile_get(expr)
         elif isinstance(expr, Call):
             return self.compile_call(expr)
         elif isinstance(expr, Assign):
@@ -84,6 +87,11 @@ class Compiler:
     def compile_variable(self, expr: Variable) -> str:
         return expr.name.lexeme
 
+    def compile_get(self, expr: Get) -> str:
+        obj = self.compile_expr(expr.object)
+        name = expr.name.lexeme
+        return f"{obj}.{name}"
+
     def compile_call(self, expr: Call) -> str:
         callee = self.compile_expr(expr.callee)
         args = ", ".join(self.compile_expr(a) for a in expr.arguments)
@@ -128,6 +136,22 @@ class Compiler:
             lines = [f"while {cond}:"]
             lines.extend(indent_lines(body_lines))
             return lines
+
+        if isinstance(stmt, FunctionStmt):
+            name = stmt.name.lexeme
+            params = ", ".join(p.lexeme for p in stmt.params)
+            lines = [f"def {name}({params}):"]
+            body_lines: List[str] = []
+            for s in stmt.body:
+                body_lines.extend(self.compile_stmt(s))
+            if not body_lines:
+                body_lines = ["pass"]
+            lines.extend(indent_lines(body_lines))
+            return lines
+        if isinstance(stmt, Return):
+            if stmt.value is None:
+                return ["return"]
+            return [f"return {self.compile_expr(stmt.value)}"]
 
         raise Exception(f"Can't compile statement type: {type(stmt)}")
 

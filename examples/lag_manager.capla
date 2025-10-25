@@ -1,0 +1,16 @@
+import org.bukkit.Bukkit
+import org.bukkit.Scheduler
+
+print "LagManager plugin (CapLang)"
+
+def monitor() {
+    print "[LagManager] Checking server..."
+    print Bukkit.getName()
+}
+
+def on_enable() {
+    print "[LagManager] Enabled"
+    Scheduler.schedule_repeating(monitor, 2)
+}
+
+on_enable()

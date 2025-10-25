@@ -2,9 +2,39 @@ from typing import Any, List
 from lexer import Token, TokenType
 from parser import (
     Binary, Grouping, Literal, Unary, Variable, Expr, Assign,
-    Stmt, ExpressionStmt, PrintStmt, VarStmt, BlockStmt, IfStmt, WhileStmt, ImportStmt, Call
+    Stmt, ExpressionStmt, PrintStmt, VarStmt, BlockStmt, IfStmt, WhileStmt, ImportStmt, Call, Get,
+    FunctionStmt, Return
 )
 import time
+from typing import List
+
+
+class ReturnException(Exception):
+    def __init__(self, value):
+        self.value = value
+
+
+class FunctionCallable:
+    def __init__(self, declaration: FunctionStmt, closure: 'Environment'):
+        self.declaration = declaration
+        self.closure = closure
+
+    def arity(self) -> int:
+        return len(self.declaration.params)
+
+    def call(self, interpreter: 'Interpreter', args: List):
+        env = Environment(self.closure)
+        # bind parameters
+        for i, param in enumerate(self.declaration.params):
+            name = param.lexeme
+            value = args[i] if i < len(args) else None
+            env.define(name, value)
+
+        try:
+            interpreter.execute_block(self.declaration.body, env)
+        except ReturnException as r:
+            return r.value
+        return None
 
 
 class Environment:
@@ -40,6 +70,7 @@ class Interpreter:
         self.environment.define('input', lambda prompt=None: input(prompt if prompt is not None else ''))
         # sleep(seconds) -> time.sleep
         self.environment.define('sleep', time.sleep)
+        # expose simple scheduler and other helpers via pyspigot import mapping
 
     def interpret(self, statements: List[Stmt]):
         try:
@@ -83,6 +114,15 @@ class Interpreter:
         elif isinstance(stmt, WhileStmt):
             while self.is_truthy(self.evaluate(stmt.condition)):
                 self.execute(stmt.body)
+        elif isinstance(stmt, FunctionStmt):
+            func = FunctionCallable(stmt, self.environment)
+            self.environment.define(stmt.name.lexeme, func)
+        elif isinstance(stmt, Return):
+            value = None
+            if stmt.value is not None:
+                value = self.evaluate(stmt.value)
+            # unwind via exception
+            raise ReturnException(value)
         else:
             raise RuntimeError(f"Unknown statement type: {type(stmt)}")
 
@@ -145,9 +185,20 @@ class Interpreter:
         if isinstance(expr, Call):
             callee = self.evaluate(expr.callee)
             args = [self.evaluate(a) for a in expr.arguments]
+            # support interpreter-declared functions
+            if hasattr(callee, 'call'):
+                return callee.call(self, args)
+
             if callable(callee):
                 return callee(*args)
             raise RuntimeError(f"Can only call functions and callable objects")
+
+        if isinstance(expr, Get):
+            obj = self.evaluate(expr.object)
+            try:
+                return getattr(obj, expr.name.lexeme)
+            except Exception:
+                raise RuntimeError(f"Attribute '{expr.name.lexeme}' not found on object")
 
         if isinstance(expr, Assign):
             value = self.evaluate(expr.value)

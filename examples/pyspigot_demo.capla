@@ -1,0 +1,4 @@
+import org.bukkit.Bukkit
+
+print "PySpigot/Bukkit demo"
+print Bukkit.getName()

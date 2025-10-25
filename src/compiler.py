@@ -13,6 +13,10 @@ def indent_lines(lines: List[str], level: int = 1) -> List[str]:
 
 
 class Compiler:
+    def __init__(self):
+        # track whether generated code needs the `time` module
+        self.needs_time = False
+
     def compile_expr(self, expr: Expr) -> str:
         if isinstance(expr, Binary):
             return self.compile_binary(expr)
@@ -95,6 +99,13 @@ class Compiler:
     def compile_call(self, expr: Call) -> str:
         callee = self.compile_expr(expr.callee)
         args = ", ".join(self.compile_expr(a) for a in expr.arguments)
+        # Map runtime `sleep(...)` calls to Python's `time.sleep(...)` in compiled output.
+        # If the callee is the bare name 'sleep', emit time.sleep(...) and mark
+        # that we need to import the time module at the top of the generated file.
+        if callee == 'sleep':
+            self.needs_time = True
+            return f"time.sleep({args})"
+
         return f"{callee}({args})"
 
     # --- Statement compilation ---
@@ -169,5 +180,9 @@ class Compiler:
         lines: List[str] = []
         for s in statements:
             lines.extend(self.compile_stmt(s))
+        # If compiled code used time.sleep, emit a top-level import
+        if getattr(self, 'needs_time', False):
+            lines.insert(0, 'import time')
+
         # join lines into Python source
         return "\n".join(lines)

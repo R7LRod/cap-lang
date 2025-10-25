@@ -19,6 +19,7 @@ update_log/
 ### v1.1.x Series
 - [v1.1.1](v1.1/v1.1.1.md) - Module system improvements and py2capla transpiler (2025-10-25)
 - [v1.1.0](v1.1/v1.1.0.md) - Initial module system implementation
+ - [v1.1.2](v1.1/v1.1.2.md) - Compiler CLI, casts, and compiler improvements (2025-10-25)
 
 ### v1.0.x Series
 - Initial CapLang implementation

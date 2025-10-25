@@ -29,6 +29,19 @@ This document describes features recently added to the CapLang prototype, how th
     ```
     Note: these are functions (call syntax) rather than a special cast operator.
 
+    ## Compiler & CLI
+
+    - `bin/capla-compile` — a small CLI wrapper around the `Compiler` class that emits Python files from `.capla` sources. Example usage:
+
+      ```bash
+      ./bin/capla-compile examples/hello.capla --out examples/compiled_hello.py
+      python3 examples/compiled_hello.py
+      ```
+
+    - Compiler mapping for runtime helpers:
+      - `sleep(...)` in CapLang is compiled to `time.sleep(...)` in Python; the compiler inserts `import time` at the top of generated files when needed so compiled scripts are self-contained.
+      - Casting calls (`int(x)`, `float(x)`, `string(x)`, `bool(x)`) are currently emitted as calls to the runtime-builtins (the interpreter provides these functions). We can optionally make the compiler emit native Python casts instead — see Future Plans below.
+
 ## pyspigot shim and plugin compilation
 
 To make it possible to compile `.capla` files that reference Bukkit/Spigot-style names, the compiler maps `import` statements that look like Java-style imports to a small Python shim package `pyspigot` provided in this repo.

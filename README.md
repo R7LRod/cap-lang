@@ -12,6 +12,12 @@ Where to start
 - Examples: `examples/hello.capla`, `examples/math.capla`, `examples/compare.capla`
 - Runner: `src/run.py` — interpret or compile-and-run a `.capla` file
 - Docs: `docs/` contains quickstart, language spec, tutorial and examples
+- Compiler CLI: `bin/capla-compile` — compile `.capla` to a Python file that can be executed directly. Example:
+
+	```bash
+	./bin/capla-compile examples/hello.capla --out examples/compiled_hello.py
+	python3 examples/compiled_hello.py
+	```
 
 New & experimental features
 ---------------------------------

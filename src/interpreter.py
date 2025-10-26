@@ -136,6 +136,33 @@ class Interpreter:
                 self.environment.define(last, self.module_cache[modname])
                 return
 
+            module_obj = None
+
+            # First try well-known Python alias mappings (e.g., `tk` -> `tkinter`).
+            # This avoids local .capla files shadowing system Python modules
+            # (for example a file named `tk.capla` in the cwd) which would
+            # otherwise cause recursive imports.
+            try:
+                alias_map = {
+                    'tk': 'tkinter',
+                }
+                root_name = parts[0]
+                mapped_name = alias_map.get(root_name, None)
+                if mapped_name is not None:
+                    try:
+                        module = __import__(mapped_name)
+                        for attr in parts[1:]:
+                            module = getattr(module, attr)
+                        module_obj = module
+                        self.module_cache[modname] = module_obj
+                        self.environment.define(last, module_obj)
+                        return
+                    except Exception:
+                        # fall through to attempt loading a .capla module below
+                        module_obj = None
+            except Exception:
+                module_obj = None
+
             # resolve possible .capla file locations
             candidates = []
             repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -150,7 +177,6 @@ class Interpreter:
                     found = c
                     break
 
-            module_obj = None
             if found is not None:
                 # prevent recursive import loops by marking module as loading
                 self.module_cache[modname] = None
@@ -180,17 +206,11 @@ class Interpreter:
                 # fallback: attempt to import a Python module mapping (pyspigot compatibility)
                 try:
                     # allow common aliasing (e.g., `import tk` -> Python's `tkinter`)
-                    alias_map = {
-                        'tk': 'tkinter',
-                    }
+                    # but if no alias mapping was used above, try to import the root name
                     root_name = parts[0]
-                    mapped_name = alias_map.get(root_name, root_name)
+                    mapped_name = root_name
 
                     module = __import__(mapped_name)
-                    # if the import was an alias (tk -> tkinter) but the caller expects the
-                    # original root name, we still bind the Python module object under the
-                    # CapLang name used in the source (e.g. `tk`). Drilling down for dotted
-                    # imports follows the mapped module.
                     for attr in parts[1:]:
                         module = getattr(module, attr)
                     module_obj = module

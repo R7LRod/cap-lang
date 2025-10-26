@@ -179,8 +179,18 @@ class Interpreter:
             else:
                 # fallback: attempt to import a Python module mapping (pyspigot compatibility)
                 try:
-                    module = __import__(parts[0])
-                    # if dotted, drill down
+                    # allow common aliasing (e.g., `import tk` -> Python's `tkinter`)
+                    alias_map = {
+                        'tk': 'tkinter',
+                    }
+                    root_name = parts[0]
+                    mapped_name = alias_map.get(root_name, root_name)
+
+                    module = __import__(mapped_name)
+                    # if the import was an alias (tk -> tkinter) but the caller expects the
+                    # original root name, we still bind the Python module object under the
+                    # CapLang name used in the source (e.g. `tk`). Drilling down for dotted
+                    # imports follows the mapped module.
                     for attr in parts[1:]:
                         module = getattr(module, attr)
                     module_obj = module

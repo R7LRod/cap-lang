@@ -1,0 +1,4 @@
+import tk
+
+# Print the module to verify import succeeded without creating a GUI
+print tk

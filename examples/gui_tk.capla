@@ -1,0 +1,12 @@
+import tk
+
+try {
+    var root = tk.Tk()
+    root.title("CapLang GUI")
+    print "Created GUI root"
+    # Enter the Tk main loop (may fail in headless environments)
+    root.mainloop()
+} catch (e) {
+    print "GUI not available:"
+    print e
+}

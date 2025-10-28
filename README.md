@@ -1,5 +1,5 @@
 
-# CapLang — Minimal language prototype
+# CapLang
 
 CapLang is a small, Ruby-like expression language prototype with two execution modes:
 
